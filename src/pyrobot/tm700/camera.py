@@ -23,7 +23,9 @@ class TM700Camera(Camera):
         self.rgb_img = None
         self.depth_img = None
         self.camera_info = None
-        self.camera_P = None
+        self.camera_P = None # projection matrix (combine D and K)
+        self.camera_D = None # distortion paramters
+        self.camera_K = None # intrinsic camera matrix
 
         # Setup topic subscriber
         rospy.Subscriber(self.configs.CAMERA.ROSTOPIC_CAMERA_INFO_STREAM, CameraInfo, self._camera_info_callback)
@@ -54,6 +56,8 @@ class TM700Camera(Camera):
         self.camera_info_lock.acquire()
         self.camera_info = msg
         self.camera_P = np.array(msg.P).reshape((3, 4))
+        self.camera_D = np.array(msg.D)
+        self.camera_K = np.array(msg.K).reshape((3, 3))
         self.camera_info_lock.release()
 
     def get_rgb(self):
@@ -82,9 +86,11 @@ class TM700Camera(Camera):
 
     def get_intrinsics(self):
         if self.camera_P is None:
-            return self.caerma_P
+            return self.camera_P
         self.camera_info_lock.acquire()
         P = deepcopy(self.camera_P)
+        D = deepcopy(self.camera_D)
+        K = deepcopy(self.camera_K)
         self.camera_info_lock.release()
-        return P[:3, :3]
+        return P[:3, :3], D, K
 
