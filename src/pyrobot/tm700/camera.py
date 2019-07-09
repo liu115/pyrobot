@@ -1,5 +1,6 @@
 import os
 import threading
+from copy import deepcopy
 
 import numpy as np
 import rospy
@@ -7,14 +8,15 @@ import message_filters
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import CameraInfo
 from sensor_msgs.msg import Image
-from sensor_mgsg.msg import JointState
+from sensor_msgs.msg import JointState
 
 from pyrobot.core import Camera
 
 
 class TM700Camera(Camera):
     def __init__(self, configs):
-        super().__init__(config=configs)
+        super(TM700Camera, self).__init__(configs=configs)
+        self.cv_bridge = CvBridge()
 
         self.camera_info_lock = threading.RLock()
         self.camera_img_lock = threading.RLock()
@@ -49,16 +51,40 @@ class TM700Camera(Camera):
 
 
     def _camera_info_callback(self, msg):
-        self.camera_info_lock.aquire()
+        self.camera_info_lock.acquire()
         self.camera_info = msg
         self.camera_P = np.array(msg.P).reshape((3, 4))
         self.camera_info_lock.release()
 
     def get_rgb(self):
-        self.camera_img_lock.aquire()
+        self.camera_img_lock.acquire()
         rgb = deepcopy(self.rgb_img)
         self.camera_img_lock.release()
         return rgb
 
 
+    def get_depth(self):
+        self.camera_img_lock.acquire()
+        depth = deepcopy(self.depth_img)
+        self.camera_img_lock.release()
+        return depth
+
+    def get_rgb_depth(self):
+        '''
+        This function returns both the RGB and depth
+        images perceived by the camera.
+        '''
+        self.camera_img_lock.acquire()
+        rgb = deepcopy(self.rgb_img)
+        depth = deepcopy(self.depth_img)
+        self.camera_img_lock.release()
+        return rgb, depth
+
+    def get_intrinsics(self):
+        if self.camera_P is None:
+            return self.caerma_P
+        self.camera_info_lock.acquire()
+        P = deepcopy(self.camera_P)
+        self.camera_info_lock.release()
+        return P[:3, :3]
 
