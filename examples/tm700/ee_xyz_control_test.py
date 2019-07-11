@@ -6,6 +6,8 @@ sys.path.append('/home/bfy2101/pyrobot/src')
 
 
 def main():
+    np.set_printoptions(precision=4, suppress=True)
+
     bot = Robot("tm700",
                 use_arm=True,
                 use_base=False,
@@ -13,13 +15,12 @@ def main():
                 use_gripper=False)
     bot.arm.go_home()
 
-    group_states = np.array([1.5707, 0, 0, 0, 1.57075, 0])
-
-    for state in group_states:
-        bot.arm.set_joint_positions(state)
+    displacement = np.array([0.15, 0, 0],
+                            [0., 0.15, 0]
+                            [0., 0., 0.15])
+    for delta in displacement:
+        bot.arm.move_ee_xyz(delta, plan=True)
         time.sleep(1)
-
-    bot.arm.go_home()
 
 
 if __name__ == "__main__":
