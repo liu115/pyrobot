@@ -1,6 +1,9 @@
 import time
 import sys
-sys.path.append('/home/bfy2101/pyrobot/src')
+import os
+from os.path import expanduser
+home = expanduser("~")
+sys.path.append(home + '/pyrobot/src')
 from pyrobot.core import Robot
 
 
@@ -12,7 +15,7 @@ def main():
                   use_gripper = False )
     bot.arm.go_home()
 
-    group_states = [ 
+    group_states = [
     				[1.5707, 0,0,0,1.57075,0],
     				[1.5707,0,0,-1,5707,1.5707,0],
     				[1.5707,0,0,1.5707,-1.5707,0],
