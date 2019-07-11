@@ -9,7 +9,7 @@ _C.HAS_BASE = False
 _C.HAS_CAMERA = False
 _C.HAS_GRIPPER = False
 
-_ARMC = _C._ARM
+_ARMC = _C.ARM
 _ARMC.CLASS = 'TM700Arm'
 _ARMC.MOVEGROUP_NAME = 'manipulator'
 _ARMC.EE_FRAME = 'tip_link'
