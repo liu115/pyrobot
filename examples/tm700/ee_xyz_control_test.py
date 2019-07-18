@@ -15,9 +15,9 @@ def main():
                 use_gripper=False)
     bot.arm.go_home()
 
-    displacement = np.array([0.15, 0, 0],
-                            [0., 0.15, 0]
-                            [0., 0., 0.15])
+    displacement = np.array([[0.15, 0, 0],
+                            [0., 0.15, 0],
+                            [0., 0., 0.15]])
     for delta in displacement:
         bot.arm.move_ee_xyz(delta, plan=True)
         time.sleep(1)
