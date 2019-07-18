@@ -1,8 +1,10 @@
-from pyrobot.core import Robot
 import numpy as np
 import time
 import sys
-sys.path.append('/home/bfy2101/pyrobot/src')
+from os.path import expanduser
+home = expanduser("~")
+sys.path.append(home + '/pyrobot/src')
+from pyrobot.core import Robot
 
 
 def main():
