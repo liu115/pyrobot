@@ -1,5 +1,7 @@
 import sys
-sys.path.append('/home/test/pyrobot/src')
+from os.path import expanduser
+home = expanduser("~")
+sys.path.append(home + '/pyrobot/src')
 
 import cv2
 import numpy as np
