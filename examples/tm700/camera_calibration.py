@@ -58,21 +58,22 @@ class CameraCalibration:
         print(rvec)
         print(tvec)
 
-        return rvec, tvec
+        return corners, rvec, tvec
 
     def visualize_corners(self, img, corners):
         img = img.astype(np.uint8)
-        cv2.drawChessboardCorners(img, (self.grid_w, self.grid_h), corners, ret)
+        for corner in corners:
+            cv2.circle(img, tuple(corner), 3, (255, 0, 0), -1)
+        # cv2.drawChessboardCorners(img, (self.grid_w, self.grid_h), corners, ret)
 
-        cv2.imshow('Image', img)
-        cv2.waitKey(1)
+        return img
+
 
     def visualize_camera_3d(self, img, rvec, tvec):
         img = np.array(img)
         img = o3d.geometry.Image(img)
-
-        # tvec = np.array([-10.02540327, -4.7427166, 45.31531465])
-        # rvec = np.array([-0.80724205, -0.4448272, 0.24229715])
+        rvec = np.squeeze(rvec)
+        tvec = np.squeeze(tvec)
 
         pcd = o3d.PointCloud()
         pts = np.zeros((100, 3))
@@ -87,30 +88,37 @@ class CameraCalibration:
 
     def _reproject(self, rvec, tvec):
         img_pts, _ = cv2.projectPoints(self.obj_pts, rvec, tvec, self.camera_K, self.camera_D)
+        img_pts = img_pts.reshape(-1, 2)
         return img_pts
 
-    def reproject_error(self):
-        pass
+    def reproject_error(self, img_pts1, img_pts2):
+        assert img_pts1.shape == img_pts2.shape
+        return cv2.norm(img_pts1, img_pts2, cv2.NORM_L2) / img_pts1.shape[0]
 
 
-
+    def visualize_reproject(self, img, rvec, tvec):
+        pts = self._reproject(rvec, tvec)
+        for pt in pts:
+           cv2.circle(img, tuple(pt), 3, (0, 255, 0), -1)
+        return img
 
 if __name__ == '__main__':
 
     cc = CameraCalibration()
     print(cc.obj_pts.shape)
-    rvec, tvec = cc.calibrate()
-    pts = cc._reproject(rvec, tvec)
-    print(pts.shape)
-    pts = np.squeeze(pts)
-    img = cc._get_rgb().astype(np.uint8)
-    print(img.shape)
-    for pt in pts:
-       print(pt)
-       cv2.circle(img, tuple(pt), 2, (255, 0, 0), -1)
-    # cv2.circle(img, (30, 30), 3, (255, 0, 0), -1)
-    cv2.imshow('Image', img)
-    cv2.waitKey(3000)
-    rvec = np.squeeze(rvec)
-    tvec = np.squeeze(tvec)
+    corners, rvec, tvec = cc.calibrate()
+    proj_corners = cc._reproject(rvec, tvec)
+    print(corners.shape)
+    print(proj_corners.shape)
+    print(cc.reproject_error(corners, proj_corners))
+    print(cc.reproject_error(corners, corners))
+
+    img = cc._get_rgb()
+    img = cc.visualize_corners(img, corners)
+    img = cc.visualize_reproject(img, rvec, tvec)
+    cc.visualize_camera_3d(img, rvec, tvec)
+    cv2.imwrite('corners_ueye.jpg', img)
+    cv2.imshow('corners', img)
+    cv2.waitKey(0)
+
     # cc.visualize_camera_3d(img, rvec, tvec)
