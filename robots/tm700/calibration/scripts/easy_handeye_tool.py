@@ -3,6 +3,7 @@
 import io
 import os
 import threading
+import time
 
 import rospy
 import rospkg
@@ -14,8 +15,14 @@ import cv2
 import numpy as np
 import tf
 import tf2_ros
-
+import sys
+from os.path import expanduser
+home = expanduser("~")
+sys.path.append(home + '/pyrobot/src')
+from pyrobot.core import Robot
 from easy_handeye.handeye_client import HandeyeClient
+
+
 
 app = Flask(__name__)
 app.debug = True
@@ -26,7 +33,11 @@ rospy.init_node('test_node')
 
 # publisher = rospy.Publisher('test_pub', String, queue_size=1)
 
-
+bot = Robot("tm700",
+                use_arm=True,
+                use_base=False,
+                use_camera=False,
+                use_gripper=False)
 ################################
 # Setup camera topic
 camera_topic = rospy.get_param('camera_topic', '/camera/color/image_raw')
@@ -56,6 +67,11 @@ robot_base_frame = rospy.get_param('robot_base_frame', '/base_link')
 camera_target_frame = rospy.get_param('camera_target_frame', '/ar_marker_2')
 
 
+def check_marker():
+    now = rospy.Time.now()
+    listener.waitForTransform(robot_base_frame, camera_target_frame, now, rospy.Duration(0.5))
+    tag_tf = listener.lookupTransform(robot_base_frame, camera_target_frame, now)
+    return tag_tf
 
 @app.route('/')
 def index():
@@ -71,9 +87,7 @@ def index():
     tag_tf = None
     tag_state = "Init"
     try:
-        now = rospy.Time.now()
-        listener.waitForTransform(robot_base_frame, camera_target_frame, now, rospy.Duration(0.5))
-        tag_tf = listener.lookupTransform(robot_base_frame, camera_target_frame, now)
+	tag_tf = check_marker()
         tag_tf = str(tag_tf)
         tag_state = "Found ar_marker"
 
@@ -116,9 +130,26 @@ def take_sample():
     # 1. set up lock
     # 2. client.get_sample()
     # 3. redirect to index
-    with client_lock:
-        samples = client.take_sample()
+    last_joint = bot.arm.get_joint_angle('wrist_3_joint')
+    ANGLE_DIFF = np.radians(15)
+    angles = np.linspace(-ANGLE_DIFF, ANGLE_DIFF, 10)
+    angles = last_joint + angles
 
+    with client_lock:
+        for angle in angles:
+            joint_pos = bot.arm.get_joint_angles()
+            joint_pos[-1] = angle
+            bot.arm.set_joint_positions(joint_pos)
+            time.sleep(0.2)
+	
+	    try:
+		tag_tf = check_marker()
+		samples = client.take_sample()
+	    except tf2_ros.TransformException as e:
+		print(e)
+        joint_pos = bot.arm.get_joint_angles()
+        joint_pos[-1] = last_joint
+        bot.arm.set_joint_positions(joint_pos)
     return redirect('/')
 
 @app.route('/reset')
