@@ -22,3 +22,6 @@
 [submodule "robots/tm700/ros-driver-techman-robot"]
 	path = robots/tm700/ros-driver-techman-robot
 	url = https://github.com/viirya/ros-driver-techman-robot.git
+[submodule "robots/tm700/easy_handeye"]
+	path = robots/tm700/easy_handeye
+	url = https://github.com/IFL-CAMP/easy_handeye

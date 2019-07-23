@@ -1,0 +1,3 @@
+<launch>
+    <node ns="easy_handeye_eye_on_base" name="calibration_gui_server" type="easy_handeye_tool.py" pkg="calibration" output="screen" />
+</launch>
