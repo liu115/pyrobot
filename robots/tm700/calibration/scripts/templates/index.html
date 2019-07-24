@@ -2,6 +2,12 @@
     TM 700 calibration tool   
 </h1>
 <img src="http://localhost:5000/image.png" />
+<h3>Joint positions</h3>
+<ol>
+    {% for joint in joints %}
+        <li>{{ joint }}</li>
+    {% endfor %}
+</ol>
 
 <p>{{ tag_state }}</p>
 

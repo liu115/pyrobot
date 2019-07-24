@@ -74,6 +74,9 @@ def index():
         hand_world_samples = samples.hand_world_samples.transforms
         camera_marker_samples = samples.camera_marker_samples.transforms
 
+    with arm_client_lock:
+        joints = arm_client.get_pose()
+
     # Fetch ar_tag frame transform from robot base
     message = None
     tag_tf = None
@@ -96,7 +99,8 @@ def index():
         'message': message,
         'result': result,
         'hand_world_samples': hand_world_samples,
-        'camera_marker_samples': camera_marker_samples
+        'camera_marker_samples': camera_marker_samples,
+        'joints': joints
     }
     rv = render_template('index.html', **params)
     # rv = render_template('index.html', tag_tf=tag_tf, tag_state=tag_state, message=message)

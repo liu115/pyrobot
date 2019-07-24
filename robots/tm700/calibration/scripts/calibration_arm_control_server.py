@@ -42,6 +42,7 @@ class ArmControlServer:
 
 
     def get_pose(self, _):
+        rospy.loginfo("Recieve get pose request")
         joints = self.bot.arm.get_joint_angles()
         res = srv.GetJointPositionsResponse()
         res.joint_positions = tuple(joints)
@@ -52,6 +53,7 @@ class ArmControlServer:
         pass
 
     def set_pose(self, req):
+        rospy.loginfo("Recieve set pose request")
         # TODO: check legal positions (prevent hit table)
 
         joints = req.joint_positions
