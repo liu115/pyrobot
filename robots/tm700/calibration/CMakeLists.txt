@@ -8,7 +8,10 @@ project(calibration)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  ar_track_alvar rospy
+  ar_track_alvar
+  rospy
+  message_generation
+  std_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -47,16 +50,15 @@ catkin_python_setup()
 ## Generate messages in the 'msg' folder
 # add_message_files(
 #   FILES
-#   Message1.msg
-#   Message2.msg
+#  test.msg
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  GetJointPositions.srv
+  SetJointPositions.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -66,10 +68,10 @@ catkin_python_setup()
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs  # Or other packages containing msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -159,6 +161,8 @@ include_directories(
 ## in contrast to setup.py, you can choose the destination
 install(PROGRAMS
   scripts/easy_handeye_tool.py
+  scripts/calibration_arm_control_server.py
+  scripts/calibration_arm_control_client.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

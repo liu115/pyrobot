@@ -7,37 +7,27 @@ import time
 
 import rospy
 import rospkg
-from flask import Flask, render_template, send_file, redirect, url_for, request
-from std_msgs.msg import String
-from sensor_msgs.msg import Image, JointState
+from flask import Flask, request
+from flask import render_template, send_file, redirect, url_for
+from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
 import numpy as np
 import tf
 import tf2_ros
-import sys
-from os.path import expanduser
-home = expanduser("~")
-sys.path.append(home + '/pyrobot/src')
-from pyrobot.core import Robot
-from easy_handeye.handeye_client import HandeyeClient
 
+from calibration.calibration_arm_control_client import ArmControlClient
+print(ArmControlClient)
+from easy_handeye.handeye_client import HandeyeClient
 
 
 app = Flask(__name__)
 app.debug = True
 
 # Run ros node on different thread than flask
-rospy.init_node('test_node')
 # threading.Thread(target=lambda: rospy.init_node('test_node', disable_signals=True)).start()
+rospy.init_node('calibration_gui_server')
 
-# publisher = rospy.Publisher('test_pub', String, queue_size=1)
-
-bot = Robot("tm700",
-                use_arm=True,
-                use_base=False,
-                use_camera=False,
-                use_gripper=False)
 ################################
 # Setup camera topic
 camera_topic = rospy.get_param('camera_topic', '/camera/color/image_raw')
@@ -57,8 +47,10 @@ rospy.Subscriber(camera_topic, Image, image_callback, queue_size=1)
 # Setup client
 
 rospy.loginfo("Setting up easy_handeye client, must wait for server services")
-client = HandeyeClient()
-client_lock = threading.Lock()
+handeye_client = HandeyeClient()
+handeye_client_lock = threading.Lock()
+arm_client = ArmControlClient()
+arm_client_lock = threading.Lock()
 
 ################################
 # Setup tf listener
@@ -77,8 +69,8 @@ def check_marker():
 def index():
     result = request.args.get('result', None)
     # Get saved samples from Handeye client
-    with client_lock:
-        samples = client.get_sample_list()
+    with handeye_client_lock:
+        samples = handeye_client.get_sample_list()
         hand_world_samples = samples.hand_world_samples.transforms
         camera_marker_samples = samples.camera_marker_samples.transforms
 
@@ -127,52 +119,63 @@ def get_tf_tag():
 
 @app.route('/take_sample')
 def take_sample():
-    # 1. set up lock
-    # 2. client.get_sample()
-    # 3. redirect to index
-    last_joint = bot.arm.get_joint_angle('wrist_3_joint')
     ANGLE_DIFF = np.radians(15)
+    # 1. set up lock
+    # 2. handeye_client.get_sample()
+    # 3. redirect to index
+    with arm_client_lock:
+        joints = arm_client.get_pose()
+        last_joint = joints[-1]
+
     angles = np.linspace(-ANGLE_DIFF, ANGLE_DIFF, 10)
     angles = last_joint + angles
 
-    with client_lock:
+    with handeye_client_lock:
         for angle in angles:
-            joint_pos = bot.arm.get_joint_angles()
-            joint_pos[-1] = angle
-            bot.arm.set_joint_positions(joint_pos)
-            time.sleep(0.2)
-	
-	    try:
+
+            with arm_client_lock:
+                joints = arm_client.get_pose()
+                joints = list(joints)
+                joints[-1] = angle
+
+                arm_client.set_pose(joints)
+                time.sleep(0.2)
+
+            try:
 		tag_tf = check_marker()
-		samples = client.take_sample()
+		samples = handeye_client.take_sample()
 	    except tf2_ros.TransformException as e:
 		print(e)
-        joint_pos = bot.arm.get_joint_angles()
-        joint_pos[-1] = last_joint
-        bot.arm.set_joint_positions(joint_pos)
+
+        with arm_client_lock:
+            joints = arm_client.get_pose()
+            joints = list(joints)
+            joints[-1] = last_joint
+            arm_client.set_pose(joints)
+
     return redirect('/')
 
 @app.route('/reset')
 def reset():
-    with client_lock:
-        samples = client.get_sample_list()
+    with handeye_client_lock:
+        samples = handeye_client.get_sample_list()
         for i in range(len(samples.hand_world_samples.transforms)):
-            client.remove_sample(0)
+            handeye_client.remove_sample(0)
 
     return redirect('/')
 
 @app.route('/compute')
 def compute_calibration():
-    with client_lock:
-        result = client.compute_calibration()
+    with handeye_client_lock:
+        result = handeye_client.compute_calibration()
         result = result.calibration.transform.transform
     return redirect(url_for('index', result=result))
 
 @app.route('/save')
 def save_result():
     result = request.args.get('result', None)
-    with client_lock:
-        client.save()
+    with handeye_client_lock:
+        handeye_client.save()
 
     return redirect(url_for('index', result=result))
 if __name__ == '__main__':

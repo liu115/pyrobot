@@ -1,4 +1,6 @@
 <launch>
     <node name="calibration_gui_server" type="easy_handeye_tool.py" pkg="calibration" output="screen">
     </node>
+    <node name="calibration_arm_server" type="calibration_arm_control_server.py" pkg="calibration" output="screen">
+    </node>
 </launch>
