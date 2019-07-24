@@ -1,6 +1,9 @@
 <launch>
-    <node name="calibration_gui_server" type="easy_handeye_tool.py" pkg="calibration" output="screen">
-    </node>
     <node name="calibration_arm_server" type="calibration_arm_control_server.py" pkg="calibration" output="screen">
+    </node>
+
+    <node ns="easy_handeye_eye_on_base" name="calibration_gui_server" type="easy_handeye_tool.py" pkg="calibration" output="screen">
+        <remap to="/calibration_get_joint_positions" from="calibration_get_joint_positions" />
+        <remap to="/calibration_set_joint_positions" from="calibration_set_joint_positions" />
     </node>
 </launch>
