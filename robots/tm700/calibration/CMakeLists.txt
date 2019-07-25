@@ -162,7 +162,7 @@ include_directories(
 install(PROGRAMS
   scripts/easy_handeye_tool.py
   scripts/calibration_arm_control_server.py
-  scripts/calibration_arm_control_client.py
+  scripts/move_to_tag.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
