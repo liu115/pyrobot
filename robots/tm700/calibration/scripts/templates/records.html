@@ -1,0 +1,15 @@
+{% if saved_positions %}
+    <h3>Saved joint positions</h3> 
+    <ol>
+    {% for pose in saved_positions %}
+        <li>{{ pose }}</li>
+    {% endfor %}
+    </ol>
+    <p><a href="records/save">Save records</a></p>
+    <p><a href="records/calibrate">Apply acoording saved record</a></p>
+{% else %}
+    <p>No records</p>
+{% endif %}
+<p><a href="/">Back</a></p>
+
+
