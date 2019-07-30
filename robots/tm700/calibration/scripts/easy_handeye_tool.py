@@ -113,7 +113,7 @@ def index():
     tag_tf = None
     tag_state = "Init"
     try:
-	tag_tf = check_marker()
+        tag_tf = check_marker()
         tag_tf = str(tag_tf)
         tag_state = "Found ar_marker"
 
@@ -176,10 +176,10 @@ def sample_with_rotation():
                 time.sleep(0.2)
 
             try:
-		tag_tf = check_marker()
-		samples = handeye_client.take_sample()
-	    except tf2_ros.TransformException as e:
-		print(e)
+                tag_tf = check_marker()
+                samples = handeye_client.take_sample()
+            except tf2_ros.TransformException as e:
+                print(e)
 
         with arm_client_lock:
             joints = arm_client.get_pose()
