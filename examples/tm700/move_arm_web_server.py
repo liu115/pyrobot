@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 import tf
 import tf2_ros
+import geometry_msgs
 from flask import Flask, request
 from flask import render_template, send_file, redirect, url_for
 
@@ -43,7 +44,6 @@ def move():
     except Exception as e:
         return str(e)
 
-
     # Get images
     rgb_img, depth_img = bot.camera.get_rgb_depth()
 
@@ -53,7 +53,28 @@ def move():
     xyz = bot.camera.pix_to_3d(x, y)
     new_xyz = util.transform_point_between_frames(listener, xyz, source_frame, target_frame)
 
-    return str(xyz) + '<br/>' + str(new_xyz)
+    link = '<a href="/moveto?x={}&y={}&z={}">move here</a>'.format(*new_xyz)
+    return str(xyz) + '<br/>' + str(new_xyz) + '<br/>' + link
+
+
+@app.route('/moveto')
+def moveto():
+    x = float(request.args.get('x', 0))
+    y = float(request.args.get('y', 0))
+    z = float(request.args.get('z', 0))
+    print(x, y)
+
+    # pose = bot.arm.get_ee_pose()
+    trans, quat = util.get_tf_transform(listener, target_frame, target_frame)
+    # rotate orientation by y
+    quat = np.array(quat)
+    rot = tf.transformations.euler_matrix(0, np.pi, 0)
+    rot = tf.transformations.quaternion_from_matrix(rot)
+    quat = tf.transformations.quaternion_multiply(rot, quat)
+
+    trans = np.array([x, y, 0.13])
+    bot.arm.set_ee_pose(trans, quat)
+    return redirect('/')
 
 @app.route('/rgb_image.png')
 def get_rgb_image():
