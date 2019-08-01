@@ -21,7 +21,9 @@ class TM700Camera(Camera):
         self.camera_info_lock = threading.RLock()
         self.camera_img_lock = threading.RLock()
         self.rgb_img = None
+        self.rgb_frame = None
         self.depth_img = None
+        self.depth_frame = None
         self.camera_info = None
         self.camera_P = None # projection matrix (combine D and K)
         self.camera_D = None # distortion paramters
@@ -45,7 +47,9 @@ class TM700Camera(Camera):
         try:
             self.rgb_img = self.cv_bridge.imgmsg_to_cv2(rgb, "bgr8")
             self.rgb_img = self.rgb_img[:, :, ::-1]
+            self.rgb_frame = rgb.header.frame_id
             self.depth_img = self.cv_bridge.imgmsg_to_cv2(depth, "passthrough")
+            self.depth_frame = depth.header.frame_id
         except CvBridgeError as e:
             rospy.logerr(e)
 
@@ -66,12 +70,23 @@ class TM700Camera(Camera):
         self.camera_img_lock.release()
         return rgb
 
+    def get_rgb_frame(self):
+        self.camera_img_lock.acquire()
+        frame_id = deepcopy(self.rgb_frame)
+        self.camera_img_lock.release()
+        return frame_id
 
     def get_depth(self):
         self.camera_img_lock.acquire()
         depth = deepcopy(self.depth_img)
         self.camera_img_lock.release()
         return depth
+
+    def get_depth_frame(self):
+        self.camera_img_lock.acquire()
+        frame_id = deepcopy(self.depth_frame)
+        self.camera_img_lock.release()
+        return frame_id
 
     def get_rgb_depth(self):
         '''
@@ -93,4 +108,22 @@ class TM700Camera(Camera):
         K = deepcopy(self.camera_K)
         self.camera_info_lock.release()
         return P[:3, :3], D, K
+
+    def pix_to_3d(self, x, y):
+        '''
+        Convert pixel coordinate (x, y) to 3d coordinate based on camera frame
+        :return: 3d coordinate numpy array [x, y, z]
+        '''
+        mat, _, _ = self.get_intrinsics()
+        mat_inv = np.linalg.inv(mat)
+
+        depth_img = self.get_depth()
+        depth = depth_img[y, x] / 1e3 # convert mm to m
+
+        uv_one = np.array([x, y, 1])
+        uv_one_in_cam = np.dot(mat_inv, uv_one)
+
+        xyz = np.multiply(uv_one_in_cam, depth)
+
+        return xyz
 

@@ -9,8 +9,9 @@ import numpy as np
 import rospy
 import tf
 import tf_conversions
+from std_msgs.msg import Header
 import geometry_msgs.msg
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, PointStamped
 import moveit_commander
 from moveit_commander import conversions
 
@@ -43,6 +44,44 @@ def get_tf_transform(tf_listener, tgt_frame, src_frame):
         raise RuntimeError('Cannot fetch the transform from'
                            ' {0:s} to {1:s}'.format(tgt_frame, src_frame))
     return trans, quat
+
+def transform_point_between_frames(tf_listener, point, src_frame, dst_frame):
+    """
+    Transform point from source frame to target frame
+    :params tf_listener: tf listener
+    :param point: [x, y, z]
+    :param src_frame: source frame id
+    :param dst_frame: target frame id
+    :return: new [x, y, z] based on dst_frame
+    """
+    try:
+        now = rospy.Time.now()
+        tf_listener.waitForTransform(dst_frame, src_frame, now, rospy.Duration(10))
+
+        # transform use point message
+        msg = point_to_ros(point, src_frame)
+        new_msg = tf_listener.transformPoint(dst_frame, msg)
+        new_point = new_msg.point
+    except (tf.LookupException,
+            tf.ConnectivityException,
+            tf.ExtrapolationException):
+        raise RuntimeError('Cannot fetch the transform from'
+                           ' {0:s} to {1:s}'.format(tgt_frame, src_frame))
+
+    return np.array([new_point.x, new_point.y, new_point.z])
+
+def point_to_ros(point, frame):
+    """
+    Convert point to ros point message with frame
+    """
+    ps = PointStamped()
+    ps.point.x = point[0]
+    ps.point.y = point[1]
+    ps.point.z = point[2]
+    ps.header = Header()
+    ps.header.stamp = rospy.Time.now()
+    ps.header.frame_id = frame
+    return ps
 
 
 def transform_to_ros_pose(trans, quat, frame):
@@ -158,7 +197,7 @@ class MoveitObjectHandler(object):
     def add_world_object(self, id_name, pose, size, frame='/base'):
         '''
         Adds the particular object to the moveit planning scene
-        
+
         :param id_name: unique id that object should be labeled with
         :param pose: pose of the object
         :param size: size of the object
@@ -186,7 +225,7 @@ class MoveitObjectHandler(object):
         :param id_name: unique id that object should be labeled with
         :type frame: string
 
-        ''' 
+        '''
         self.scene.remove_world_object(id_name)
         self.scene.remove_world_object(id_name)
 
@@ -194,12 +233,12 @@ class MoveitObjectHandler(object):
         '''
         Attaches the specified object to the robot
 
-        :param link_name: name of the link to which the bject 
+        :param link_name: name of the link to which the bject
                           should be attached
         :param id_name: unique id associated with the object
         :param pose: pose of the object
         :parma size: size of the object
-        
+
         :type link_name: string
         :type id_name: string
         :type pose: list of double of length 7 (x,y,z, q_x, q_y, q_z, q_w)
@@ -219,12 +258,12 @@ class MoveitObjectHandler(object):
         '''
         Detaches an object earlier attached to the robot
 
-        :param link_name: name of the link from which the bject 
+        :param link_name: name of the link from which the bject
                           should be detached
         :param id_name: unique id associated with the object
-        :param remove_from_world: if set true, deletes the 
+        :param remove_from_world: if set true, deletes the
                                   object from the scene.
-        
+
         :type link_name: string
         :type id_name: string
         :type remove_from_world: bool
@@ -252,22 +291,22 @@ class MoveitObjectHandler(object):
     def add_table(self, pose=None, size=None):
         '''
         Adds a table in the planning scene in the base frame.
-        
+
         :param pose: pose of the object
         :parma size: size of the object
-        
-        
+
+
         :type pose: list of double of length 7 (x,y,z, q_x, q_y, q_z, q_w)
         :type size: tuple of length 3
         '''
         if pose is not None and size is not None:
-            self.add_world_object('table', 
-                pose=pose, 
+            self.add_world_object('table',
+                pose=pose,
                 size=size)
         else:
             # Default table.
             print('Creating default table.')
-            self.add_world_object('table', 
+            self.add_world_object('table',
                 pose=[0.8,0.0,-0.23,0.,0.,0.,1.],
                 size=(1.35,2.0,0.1))
 
@@ -277,44 +316,44 @@ class MoveitObjectHandler(object):
 
         :param pose: pose of the object
         :parma size: size of the object
-        
-        
+
+
         :type pose: list of double of length 7 (x,y,z, q_x, q_y, q_z, q_w)
-        :type size: tuple of length 3        
+        :type size: tuple of length 3
         '''
         if pose is not None and size is not None:
-            self.add_world_object('kinect', 
-                pose=pose, 
+            self.add_world_object('kinect',
+                pose=pose,
                 size=size)
         else:
             # Default kinect.
             print('Creating default kinect.')
-            self.add_world_object('kinect', 
-                pose=[0., 0.0,0.75,0.,0.,0.,1.], 
+            self.add_world_object('kinect',
+                pose=[0., 0.0,0.75,0.,0.,0.,1.],
                 size=(0.25,0.25,0.3))
 
     def add_gripper(self, pose=None, size=None):
         '''
         Attaches gripper object to 'gripper' link.
-        
+
         :param pose: pose of the object
         :parma size: size of the object
-        
-        
+
+
         :type pose: list of double of length 7 (x,y,z, q_x, q_y, q_z, q_w)
         :type size: tuple of length 3
         '''
         if pose is not None and size is not None:
             self.attach_arm_object('right_gripper',
-                'gripper',  
-                pose=pose, 
+                'gripper',
+                pose=pose,
                 size=size)
         else:
             # Default gripper.
             print('Creating default gripper.')
             self.attach_arm_object('right_gripper',
-                'gripper', 
-                pose=[0., 0.0, 0.07,0.,0.,0.,1.], 
+                'gripper',
+                pose=[0., 0.0, 0.07,0.,0.,0.,1.],
                 size=(0.02,0.1,0.07))
 
     def remove_table(self):
@@ -334,5 +373,5 @@ class MoveitObjectHandler(object):
         self.remove_world_object('gripper')
         rospy.sleep(0.2)
         self.remove_world_object('gripper')
-        
+
 
