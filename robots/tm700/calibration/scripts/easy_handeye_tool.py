@@ -173,7 +173,7 @@ def sample_with_rotation():
                 joints[-1] = angle
 
                 arm_client.set_pose(joints)
-                time.sleep(0.2)
+                time.sleep(0.4)
 
             try:
                 tag_tf = check_marker()
