@@ -21,7 +21,7 @@
 	url = https://github.com/s-gupta/ar_track_alvar.git
 [submodule "robots/tm700/ros-driver-techman-robot"]
 	path = robots/tm700/ros-driver-techman-robot
-	url = https://github.com/viirya/ros-driver-techman-robot.git
+	url = https://github.com/peter0749/ros-driver-techman-robot.git
 [submodule "robots/tm700/easy_handeye"]
 	path = robots/tm700/easy_handeye
 	url = https://github.com/liu115/easy_handeye
