@@ -46,4 +46,9 @@
 
     </include>
 
+    <!-- start the gripper listener -->
+    <include file="$(find tm700_gripper_test)/launch/tm_gripper_test.launch">
+        <arg name="robot_ip" value="192.168.0.200" />
+    </include>
+
 </launch>
