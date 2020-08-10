@@ -15,11 +15,11 @@ git submodule update
 ```
 
 Also need:
-1. A standard ros camera. We use (realsense)[https://github.com/IntelRealSense/realsense-ros] here.
-2. (ar_track_alvar)[http://wiki.ros.org/ar_track_alvar] (Check the docs and print AR tag)
+1. A standard ros camera. We use [realsense](https://github.com/IntelRealSense/realsense-ros) here.
+2. [ar_track_alvar](http://wiki.ros.org/ar_track_alvar) (Check the docs and print AR tag)
 
 
-## Run calibration (One time)
+## Run calibration (one time)
 
 ### Launch camera (optional)
 ```
@@ -30,7 +30,8 @@ roslaunch realsense2_camera rs_rgbd.launch  color_width:="1280" color_height:="7
 roslaunch calibration calibration.launch robot_ip:=[ROBOT IP]
 ```
 
-## Publish Estimated Transforms
+## Publish Estimated Transforms (Launch everytime)
+The launch file **includes** all the tm700 main ros packages and gripper.
 ```
 roslaunch calibration publish.launch robot_ip:=[ROBOT IP]
 ```
